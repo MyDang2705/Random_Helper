@@ -2,8 +2,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../domain/entities/item.dart';
-import '../../core/constants.dart';
-import '../../core/color_palettes.dart';
+import '../../core/utils/constants.dart';
+import '../../core/utils/color_palettes.dart';
 
 typedef OnSpinEnd = void Function(int index);
 
@@ -32,6 +32,7 @@ class WheelViewState extends State<WheelView>
   late AnimationController _controller;
   late Animation<double> _anim;
   double _rotation = 0;
+  bool _isSpinning = false;
 
   @override
   void initState() {
@@ -39,7 +40,39 @@ class WheelViewState extends State<WheelView>
     _controller = AnimationController(vsync: this);
   }
 
+  @override
+  void didUpdateWidget(WheelView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset rotation về 0 khi items thay đổi (ví dụ khi restore hoặc shuffle)
+    if (oldWidget.items.length != widget.items.length ||
+        _hasItemsChanged(oldWidget.items, widget.items)) {
+      setState(() {
+        _rotation = 0;
+      });
+    }
+  }
+
+  /// Kiểm tra xem danh sách items có thay đổi không
+  bool _hasItemsChanged(List<Item> oldItems, List<Item> newItems) {
+    if (oldItems.length != newItems.length) return true;
+    for (int i = 0; i < oldItems.length; i++) {
+      if (oldItems[i].id != newItems[i].id ||
+          oldItems[i].label != newItems[i].label) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Kiểm tra xem vòng quay có đang quay không
+  bool isSpinning() => _isSpinning;
+
   Future<void> spinToIndex(int targetIndex) async {
+    // Nếu đang quay thì không cho quay tiếp
+    if (_isSpinning) {
+      return;
+    }
+
     final n = widget.items.length;
     if (n == 0) return;
     final segmentAngle = 2 * pi / n;
@@ -64,26 +97,34 @@ class WheelViewState extends State<WheelView>
           );
     }
 
+    // Đánh dấu đang quay
+    setState(() {
+      _isSpinning = true;
+    });
+
     _controller.duration = Duration(milliseconds: duration);
-    _anim =
-        Tween<double>(begin: start, end: end).animate(
-            CurvedAnimation(parent: _controller, curve: Curves.decelerate),
-          )
-          ..addListener(() {
-            setState(() {
-              _rotation = _anim.value;
-            });
-          })
-          ..addStatusListener((s) {
-            if (s == AnimationStatus.completed) {
-              final normalized = (_rotation % (2 * pi) + 2 * pi) % (2 * pi);
-              final pointerAngle = (-pi / 2 - normalized) % (2 * pi);
-              var idx = (((pointerAngle + 2 * pi) % (2 * pi)) / segmentAngle)
-                  .floor();
-              idx = (idx % n + n) % n;
-              if (widget.onSpinEnd != null) widget.onSpinEnd!(idx);
-            }
+    _anim = Tween<double>(begin: start, end: end).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.decelerate),
+    )
+      ..addListener(() {
+        setState(() {
+          _rotation = _anim.value;
+        });
+      })
+      ..addStatusListener((s) {
+        if (s == AnimationStatus.completed) {
+          // Đánh dấu quay xong
+          setState(() {
+            _isSpinning = false;
           });
+          final normalized = (_rotation % (2 * pi) + 2 * pi) % (2 * pi);
+          final pointerAngle = (-pi / 2 - normalized) % (2 * pi);
+          var idx =
+              (((pointerAngle + 2 * pi) % (2 * pi)) / segmentAngle).floor();
+          idx = (idx % n + n) % n;
+          if (widget.onSpinEnd != null) widget.onSpinEnd!(idx);
+        }
+      });
 
     _controller.reset();
     await _controller.forward();
@@ -102,7 +143,7 @@ class WheelViewState extends State<WheelView>
         return Color(int.parse(item.color!.replaceFirst('#', '0xff')));
       } catch (_) {}
     }
-    
+
     // Sử dụng palette màu từ themeColor (JSON string)
     List<Color> palette;
     if (widget.themeColor != null && widget.themeColor!.contains(',')) {
@@ -112,7 +153,7 @@ class WheelViewState extends State<WheelView>
       // Fallback về palette mặc định
       palette = ColorPalettes.palettes[0].colors;
     }
-    
+
     // Chọn màu từ palette dựa trên index
     final paletteIndex = i % palette.length;
     return palette[paletteIndex];
@@ -210,7 +251,7 @@ class _WheelPainter extends CustomPainter {
         true,
         paint,
       );
-      
+
       // Vẽ border trắng dày giữa các segment (đường thẳng từ tâm ra ngoài)
       final borderAngle = start;
       final borderEndX = center.dx + radius * cos(borderAngle);
@@ -220,14 +261,14 @@ class _WheelPainter extends CustomPainter {
         ..strokeWidth = 3
         ..color = Colors.white;
       canvas.drawLine(center, Offset(borderEndX, borderEndY), borderLinePaint);
-      
+
       final label = items[i].label;
       // Tính toán màu chữ dựa trên độ sáng của màu nền
       final bgColor = colorForIndex(i);
       final luminance = bgColor.computeLuminance();
       // Nếu màu nền sáng thì dùng chữ đen, nếu tối thì dùng chữ trắng
       final textColor = luminance > 0.5 ? Colors.black87 : Colors.white;
-      
+
       final tp = TextPainter(
         text: TextSpan(
           text: label,
@@ -235,19 +276,21 @@ class _WheelPainter extends CustomPainter {
             color: textColor,
             fontSize: 16, // Tăng font size
             fontWeight: FontWeight.bold,
-            shadows: textColor == Colors.white ? [
-              Shadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ] : [
-              Shadow(
-                color: Colors.white.withOpacity(0.8),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            shadows: textColor == Colors.white
+                ? [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    Shadow(
+                      color: Colors.white.withOpacity(0.8),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -262,7 +305,7 @@ class _WheelPainter extends CustomPainter {
       tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();
     }
-    
+
     // Vẽ border tròn ngoài cùng
     final outerBorderPaint = Paint()
       ..style = PaintingStyle.stroke

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/spin.dart';
 import '../../domain/entities/item.dart';
-import '../../core/constants.dart';
-import '../../core/color_palettes.dart';
-import '../../core/theme.dart';
+import '../../core/utils/constants.dart';
+import '../../core/utils/color_palettes.dart';
+import '../../core/utils/theme.dart';
 import '../providers/spin_provider.dart';
 
 class EditSpinPage extends StatefulWidget {
@@ -33,8 +33,11 @@ class _EditSpinPageState extends State<EditSpinPage> {
   void initState() {
     super.initState();
     _nameCtrl.text = widget.spin.name;
-    _selectedPaletteJson = widget.spin.themeColor ?? ColorPalettes.paletteToJson(ColorPalettes.palettes[0].colors);
-    _spinDuration = (widget.spin.spinDuration ?? AppConstants.defaultSpinDuration).toDouble();
+    _selectedPaletteJson = widget.spin.themeColor ??
+        ColorPalettes.paletteToJson(ColorPalettes.palettes[0].colors);
+    _spinDuration =
+        (widget.spin.spinDuration ?? AppConstants.defaultSpinDuration)
+            .toDouble();
     _loadItems();
   }
 
@@ -142,15 +145,18 @@ class _EditSpinPageState extends State<EditSpinPage> {
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: ColorPalettes.palettes.length,
                 itemBuilder: (context, index) {
                   final palette = ColorPalettes.palettes[index];
-                  final isSelected = _selectedPaletteJson == ColorPalettes.paletteToJson(palette.colors);
+                  final isSelected = _selectedPaletteJson ==
+                      ColorPalettes.paletteToJson(palette.colors);
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _selectedPaletteJson = ColorPalettes.paletteToJson(palette.colors);
+                        _selectedPaletteJson =
+                            ColorPalettes.paletteToJson(palette.colors);
                       });
                       Navigator.pop(context);
                     },
@@ -159,7 +165,9 @@ class _EditSpinPageState extends State<EditSpinPage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.grey.shade300,
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -197,8 +205,12 @@ class _EditSpinPageState extends State<EditSpinPage> {
                           Text(
                             palette.name,
                             style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                              color: isSelected ? AppColors.primary : Colors.black87,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.black87,
                             ),
                           ),
                         ],
@@ -291,7 +303,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.palette_outlined, size: 20, color: AppColors.primary),
+                            const Icon(Icons.palette_outlined,
+                                size: 20, color: AppColors.primary),
                             const SizedBox(width: 8),
                             const Text(
                               'Thang màu',
@@ -309,7 +322,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                                 width: 140,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.05),
@@ -319,7 +333,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                                   ],
                                 ),
                                 child: Row(
-                                  children: ColorPalettes.jsonToPalette(_selectedPaletteJson)
+                                  children: ColorPalettes.jsonToPalette(
+                                          _selectedPaletteJson)
                                       .map((color) {
                                     return Expanded(
                                       child: Container(
@@ -360,7 +375,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.timer_outlined, size: 20, color: AppColors.primary),
+                            const Icon(Icons.timer_outlined,
+                                size: 20, color: AppColors.primary),
                             const SizedBox(width: 8),
                             const Text(
                               'Thời gian quay',
@@ -372,7 +388,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                             ),
                             const Spacer(),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
@@ -394,7 +411,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                           min: AppConstants.minSpinDuration.toDouble(),
                           max: AppConstants.maxSpinDuration.toDouble(),
                           divisions: 12,
-                          label: '${(_spinDuration / 1000).toStringAsFixed(1)} giây',
+                          label:
+                              '${(_spinDuration / 1000).toStringAsFixed(1)} giây',
                           activeColor: AppColors.primary,
                           inactiveColor: Colors.grey.shade300,
                           onChanged: (value) {
@@ -443,7 +461,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                         icon: const Icon(Icons.add_circle_outline, size: 20),
                         label: const Text('Thêm mục'),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                     ],
@@ -485,7 +504,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                               color: AppColors.error,
                             ),
                             onPressed: () async {
-                              final prov = Provider.of<SpinProvider>(context, listen: false);
+                              final prov = Provider.of<SpinProvider>(context,
+                                  listen: false);
                               try {
                                 if (item.id != null) {
                                   await prov.deleteItem(item.id!);
@@ -494,7 +514,8 @@ class _EditSpinPageState extends State<EditSpinPage> {
                               } catch (e) {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                                    SnackBar(
+                                        content: Text('Lỗi: ${e.toString()}')),
                                   );
                                 }
                               }
@@ -513,12 +534,14 @@ class _EditSpinPageState extends State<EditSpinPage> {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20), // Bo tròn hơn
+                          borderRadius:
+                              BorderRadius.circular(20), // Bo tròn hơn
                         ),
                       ),
                       child: const Text(
                         'Lưu thay đổi',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -528,4 +551,3 @@ class _EditSpinPageState extends State<EditSpinPage> {
     );
   }
 }
-

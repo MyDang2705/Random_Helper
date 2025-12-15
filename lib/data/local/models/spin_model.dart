@@ -1,6 +1,6 @@
 // lib/data/local/models/spin_model.dart
 import '../../../domain/entities/spin.dart';
-import '../../../core/constants.dart';
+import '../../../core/utils/constants.dart';
 
 class SpinModel extends Spin {
   const SpinModel({

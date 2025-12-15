@@ -48,4 +48,3 @@ class SpinOnce {
     return selectedItem;
   }
 }
-

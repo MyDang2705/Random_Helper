@@ -5,12 +5,16 @@ import '../../domain/entities/item.dart';
 import '../../domain/usecases/get_spins.dart';
 import '../../domain/usecases/create_spin.dart';
 import '../../domain/usecases/spin_once.dart';
+import '../../domain/usecases/restore_items.dart';
+import '../../domain/usecases/shuffle_items.dart';
 
 class SpinProvider extends ChangeNotifier {
   final SpinRepository repository;
   late final GetSpins _getSpins;
   late final CreateSpin _createSpin;
   late final SpinOnce _spinOnce;
+  late final RestoreItems _restoreItems;
+  late final ShuffleItems _shuffleItems;
 
   List<Spin> spins = [];
   bool loading = false;
@@ -22,6 +26,8 @@ class SpinProvider extends ChangeNotifier {
     _getSpins = GetSpins(repository);
     _createSpin = CreateSpin(repository);
     _spinOnce = SpinOnce(repository);
+    _restoreItems = RestoreItems(repository);
+    _shuffleItems = ShuffleItems(repository);
   }
 
   Future<void> loadSpins() async {
@@ -125,18 +131,27 @@ class SpinProvider extends ChangeNotifier {
     try {
       final spin = spins.firstWhere((s) => s.id == spinId);
       final items = await getItems(spinId);
-      
-      // Tạo shareable text đẹp
+
+      // Tạo deep link cho app
+      final deepLink = 'randomhelper://spin/$spinId';
+
+      // Tạo shareable text đẹp với link
       final buffer = StringBuffer();
-      buffer.writeln('🎰 Vòng quay may mắn: ${spin.name}');
+      buffer.writeln('🎰 Random Helper: ${spin.name}');
       buffer.writeln('');
-      buffer.writeln('📋 Danh sách mục:');
+      buffer.writeln('📋 Danh sách mục (${items.length} mục):');
       for (var i = 0; i < items.length; i++) {
         buffer.writeln('${i + 1}. ${items[i].label}');
       }
       buffer.writeln('');
-      buffer.writeln('💡 Mở app LuckyHub để quay ngay!');
-      
+      buffer.writeln('🔗 Link vòng quay:');
+      buffer.writeln(deepLink);
+      buffer.writeln('');
+      buffer.writeln('💡 Tải app Random Helper để quay ngay!');
+      buffer.writeln('');
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+      buffer.writeln('Random Helper - Chọn ngẫu nhiên');
+
       return buffer.toString();
     } catch (e) {
       _error = 'Lỗi khi tạo link chia sẻ: ${e.toString()}';
@@ -170,6 +185,34 @@ class SpinProvider extends ChangeNotifier {
       return map.toString().replaceAll(', ', ',\n    ');
     } catch (e) {
       _error = 'Lỗi khi export: ${e.toString()}';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Khôi phục lại tất cả items đã bị xóa từ lịch sử quay
+  /// Trả về số lượng items đã khôi phục
+  Future<int> restoreItems(int spinId) async {
+    try {
+      _error = null;
+      final count = await _restoreItems.execute(spinId);
+      notifyListeners();
+      return count;
+    } catch (e) {
+      _error = 'Lỗi khi khôi phục items: ${e.toString()}';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Trộn (shuffle) danh sách items trong vòng quay
+  Future<void> shuffleItems(int spinId) async {
+    try {
+      _error = null;
+      await _shuffleItems.execute(spinId);
+      notifyListeners();
+    } catch (e) {
+      _error = 'Lỗi khi trộn items: ${e.toString()}';
       notifyListeners();
       rethrow;
     }

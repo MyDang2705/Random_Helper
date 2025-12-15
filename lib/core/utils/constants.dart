@@ -19,4 +19,3 @@ class AppConstants {
   static const double defaultWheelSize = 320.0;
   static const double wheelPointerSize = 24.0;
 }
-

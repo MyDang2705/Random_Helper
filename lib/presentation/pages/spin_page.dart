@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../widgets/wheel_view.dart';
 import '../providers/spin_provider.dart';
 import '../../domain/entities/item.dart';
-import '../../core/constants.dart';
-import '../../core/theme.dart';
+import '../../core/utils/constants.dart';
+import '../../core/utils/theme.dart';
 
 class SpinPage extends StatefulWidget {
   final int spinId;
@@ -30,6 +30,9 @@ class _SpinPageState extends State<SpinPage> {
   List<Item> _items = [];
   bool _loading = true;
   String? _lastResult;
+  bool _isRestoring = false;
+  bool _isShuffling = false;
+  bool _isSpinning = false;
 
   @override
   void initState() {
@@ -40,10 +43,122 @@ class _SpinPageState extends State<SpinPage> {
   Future<void> _loadItems() async {
     final prov = Provider.of<SpinProvider>(context, listen: false);
     final list = await prov.getItems(widget.spinId);
-    setState(() {
-      _items = list;
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _items = list;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _onRestorePressed() async {
+    final prov = Provider.of<SpinProvider>(context, listen: false);
+    try {
+      setState(() {
+        _isRestoring = true;
+      });
+
+      final count = await prov.restoreItems(widget.spinId);
+
+      if (mounted) {
+        // Clear thông báo cũ trước
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        if (count > 0) {
+          // Xóa kết quả hiển thị
+          setState(() {
+            _lastResult = null;
+          });
+
+          // Reload items để hiển thị lại
+          await _loadItems();
+
+          // Hiển thị thông báo thành công ngay
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã khôi phục $count mục'),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        } else {
+          // Không có gì để khôi phục
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không có mục nào để khôi phục'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRestoring = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onShufflePressed() async {
+    // Hiển thị thông báo ngay lập tức khi bấm
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã trộn danh sách'),
+          backgroundColor: AppColors.success,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+
+    final prov = Provider.of<SpinProvider>(context, listen: false);
+    try {
+      setState(() {
+        _isShuffling = true;
+      });
+
+      await prov.shuffleItems(widget.spinId);
+
+      if (mounted) {
+        // Reload items để hiển thị lại theo thứ tự mới
+        await _loadItems();
+
+        // Xóa kết quả hiển thị
+        setState(() {
+          _lastResult = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isShuffling = false;
+        });
+      }
+    }
   }
 
   Future<void> _onSpinPressed() async {
@@ -55,23 +170,42 @@ class _SpinPageState extends State<SpinPage> {
       }
       return;
     }
+
+    // Kiểm tra xem vòng quay có đang quay không
+    if (_isSpinning || _wheelKey.currentState?.isSpinning() == true) {
+      // Đang quay thì không làm gì cả
+      return;
+    }
+
     final prov = Provider.of<SpinProvider>(context, listen: false);
     try {
+      // Đánh dấu đang quay
+      setState(() {
+        _isSpinning = true;
+      });
+
       final chosen = await prov.spinOnce(widget.spinId);
       final idx = _items.indexWhere((e) => e.id == chosen.id);
       await _wheelKey.currentState?.spinToIndex(idx >= 0 ? idx : 0);
+
+      // Đánh dấu quay xong
+      if (mounted) {
+        setState(() {
+          _isSpinning = false;
+        });
+      }
       if (mounted) {
         setState(() {
           _lastResult = chosen.label;
         });
-        
+
         // Xóa item đã quay được khỏi danh sách
         if (chosen.id != null) {
           await prov.deleteItem(chosen.id!);
           // Reload items để cập nhật danh sách
           await _loadItems();
         }
-        
+
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -157,7 +291,11 @@ class _SpinPageState extends State<SpinPage> {
         );
       }
     } catch (e) {
+      // Đánh dấu quay xong (hoặc lỗi)
       if (mounted) {
+        setState(() {
+          _isSpinning = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi quay: ${e.toString()}')),
         );
@@ -195,7 +333,8 @@ class _SpinPageState extends State<SpinPage> {
                     if (_lastResult != null)
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 24),
-                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 32),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 20, horizontal: 32),
                         decoration: BoxDecoration(
                           color: AppColors.bgCard,
                           borderRadius: BorderRadius.circular(20),
@@ -225,7 +364,8 @@ class _SpinPageState extends State<SpinPage> {
                     else
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 24),
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 24),
                         child: Text(
                           'Chạm START để quay',
                           style: TextStyle(
@@ -260,12 +400,16 @@ class _SpinPageState extends State<SpinPage> {
                           ),
                           // Nút START có thể click được
                           GestureDetector(
-                            onTap: _items.isEmpty ? null : _onSpinPressed,
+                            onTap: (_items.isEmpty || _isSpinning)
+                                ? null
+                                : _onSpinPressed,
                             child: Container(
                               width: AppConstants.defaultWheelSize * 0.25,
                               height: AppConstants.defaultWheelSize * 0.25,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: _isSpinning
+                                    ? Colors.grey.shade300
+                                    : Colors.white,
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
@@ -279,9 +423,12 @@ class _SpinPageState extends State<SpinPage> {
                                 child: Text(
                                   'START',
                                   style: TextStyle(
-                                    fontSize: AppConstants.defaultWheelSize * 0.06,
+                                    fontSize:
+                                        AppConstants.defaultWheelSize * 0.06,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF1E40AF),
+                                    color: _isSpinning
+                                        ? Colors.grey.shade600
+                                        : const Color(0xFF1E40AF),
                                     letterSpacing: 1.2,
                                   ),
                                 ),
@@ -292,10 +439,116 @@ class _SpinPageState extends State<SpinPage> {
                       ),
                     ),
                     const SizedBox(height: 40),
+                    // Hai nút Shuffle và Restart - gọn gàng, đẹp
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Nút Shuffle - trộn danh sách
+                          _CompactActionButton(
+                            icon: Icons.shuffle,
+                            label: 'Trộn',
+                            onPressed: _items.length > 1 &&
+                                    !_isShuffling &&
+                                    !_isRestoring
+                                ? _onShufflePressed
+                                : null,
+                            isLoading: _isShuffling,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          // Nút Restart - khôi phục items
+                          _CompactActionButton(
+                            icon: Icons.refresh,
+                            label: 'Khôi phục',
+                            onPressed: !_isRestoring && !_isShuffling
+                                ? _onRestorePressed
+                                : null,
+                            isLoading: _isRestoring,
+                            color: AppColors.success,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
+    );
+  }
+}
+
+// Widget button gọn gàng, đẹp cho các action
+class _CompactActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final Color color;
+
+  const _CompactActionButton({
+    required this.icon,
+    required this.label,
+    this.onPressed,
+    this.isLoading = false,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isLoading ? color.withOpacity(0.5) : color,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
+            ),
+            boxShadow: isLoading
+                ? []
+                : [
+                    BoxShadow(
+                      color: color.withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: isLoading
+              ? SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 18, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 }
@@ -307,24 +560,24 @@ class _ArrowPainter extends CustomPainter {
     final paint = Paint()
       ..color = const Color(0xFF1E40AF)
       ..style = PaintingStyle.fill;
-    
+
     final borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-    
+
     final path = Path();
     // Vẽ mũi tên tam giác chỉ xuống - lớn hơn và rõ ràng hơn
     final arrowWidth = size.width * 0.8;
     final arrowHeight = size.height;
     final leftX = (size.width - arrowWidth) / 2;
     final rightX = leftX + arrowWidth;
-    
+
     path.moveTo(size.width / 2, arrowHeight); // Điểm dưới (mũi tên)
     path.lineTo(leftX, 0); // Điểm trên trái
     path.lineTo(rightX, 0); // Điểm trên phải
     path.close();
-    
+
     canvas.drawPath(path, paint);
     // Vẽ border trắng cho mũi tên
     canvas.drawPath(path, borderPaint);
@@ -333,4 +586,3 @@ class _ArrowPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

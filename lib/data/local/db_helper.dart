@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../core/constants.dart';
+import '../../core/utils/constants.dart';
 
 class DBHelper {
   static const _dbName = AppConstants.dbName;
-  static const _dbVersion = 3; 
+  static const _dbVersion = 3;
   static Database? _database;
 
   DBHelper._privateConstructor();
@@ -39,7 +39,8 @@ class DBHelper {
         final results = await db.query('results');
         for (var result in results) {
           final itemId = result['item_id'] as int;
-          final itemMaps = await db.query('items', where: 'id = ?', whereArgs: [itemId]);
+          final itemMaps =
+              await db.query('items', where: 'id = ?', whereArgs: [itemId]);
           if (itemMaps.isNotEmpty) {
             final label = itemMaps.first['label'] as String;
             await db.update(

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../core/theme.dart';
+import '../../core/utils/theme.dart';
 import '../../data/repositories/spin_repository_impl.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -32,7 +32,8 @@ class _HistoryPageState extends State<HistoryPage> {
   Future<void> _loadHistory() async {
     setState(() => _loading = true);
     try {
-      final repository = Provider.of<SpinRepositoryImpl>(context, listen: false);
+      final repository =
+          Provider.of<SpinRepositoryImpl>(context, listen: false);
       final results = await repository.getResultsBySpinId(widget.spinId);
 
       setState(() {
@@ -115,8 +116,11 @@ class _HistoryPageState extends State<HistoryPage> {
                     itemCount: _results.length,
                     itemBuilder: (context, index) {
                       final result = _results[index];
-                      final label = result['item_label'] as String? ?? 'Không xác định';
+                      final label =
+                          result['item_label'] as String? ?? 'Không xác định';
                       final timestamp = result['timestamp'] as int;
+                      // Số thứ tự (mới nhất = 1, cũ nhất = cuối)
+                      final orderNumber = index + 1;
 
                       return Container(
                         margin: const EdgeInsets.symmetric(
@@ -144,19 +148,27 @@ class _HistoryPageState extends State<HistoryPage> {
                             vertical: 8,
                           ),
                           leading: Container(
-                            width: 44,
-                            height: 44,
+                            width: 50,
+                            height: 50,
                             decoration: BoxDecoration(
                               gradient: AppColors.primaryGradient,
                               borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Center(
                               child: Text(
-                                '${index + 1}',
+                                '$orderNumber',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 18,
+                                  letterSpacing: -0.5,
                                 ),
                               ),
                             ),
@@ -209,4 +221,3 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 }
-

@@ -76,12 +76,14 @@ class SpinRepositoryImpl implements SpinRepository {
   @override
   Future<void> addItem(int spinId, Item item) async {
     final db = await _dbHelper.database;
-    await db.insert('items', ItemModel(
-      spinId: spinId,
-      label: item.label,
-      weight: item.weight,
-      color: item.color,
-    ).toMap());
+    await db.insert(
+        'items',
+        ItemModel(
+          spinId: spinId,
+          label: item.label,
+          weight: item.weight,
+          color: item.color,
+        ).toMap());
   }
 
   @override
@@ -108,7 +110,7 @@ class SpinRepositoryImpl implements SpinRepository {
       'results',
       where: 'spin_id = ?',
       whereArgs: [spinId],
-      orderBy: 'timestamp DESC',
+      orderBy: 'timestamp ASC', // Sắp xếp cũ nhất lên đầu (số 1)
     );
   }
 
@@ -116,5 +118,33 @@ class SpinRepositoryImpl implements SpinRepository {
   Future<void> deleteItem(int itemId) async {
     final db = await _dbHelper.database;
     await db.delete('items', where: 'id = ?', whereArgs: [itemId]);
+  }
+
+  @override
+  Future<void> deleteResultsBySpinId(int spinId) async {
+    final db = await _dbHelper.database;
+    await db.delete('results', where: 'spin_id = ?', whereArgs: [spinId]);
+  }
+
+  @override
+  Future<void> replaceItems(int spinId, List<Item> newItems) async {
+    final db = await _dbHelper.database;
+    // Bắt đầu transaction để đảm bảo atomicity
+    await db.transaction((txn) async {
+      // Xóa tất cả items cũ của spin này
+      await txn.delete('items', where: 'spin_id = ?', whereArgs: [spinId]);
+
+      // Insert lại tất cả items theo thứ tự mới
+      for (var item in newItems) {
+        await txn.insert(
+            'items',
+            ItemModel(
+              spinId: spinId,
+              label: item.label,
+              weight: item.weight,
+              color: item.color,
+            ).toMap());
+      }
+    });
   }
 }

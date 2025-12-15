@@ -26,4 +26,3 @@ class ResultModel {
         timestamp: map['timestamp'] as int,
       );
 }
-

@@ -3,22 +3,47 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/spin.dart';
 import '../../domain/entities/item.dart';
-import '../../core/constants.dart';
-import '../../core/color_palettes.dart';
-import '../../core/theme.dart';
+import '../../domain/entities/spin_template.dart';
+import '../../core/utils/constants.dart';
+import '../../core/utils/color_palettes.dart';
+import '../../core/utils/theme.dart';
 import '../providers/spin_provider.dart';
 
 class CreateSpinPage extends StatefulWidget {
-  const CreateSpinPage({Key? key}) : super(key: key);
+  final SpinTemplate? template;
+
+  const CreateSpinPage({Key? key, this.template}) : super(key: key);
+
+  /// Named constructor để tạo từ template
+  factory CreateSpinPage.fromTemplate({required SpinTemplate template}) {
+    return CreateSpinPage(template: template);
+  }
+
   @override
   _CreateSpinPageState createState() => _CreateSpinPageState();
 }
 
 class _CreateSpinPageState extends State<CreateSpinPage> {
   final _nameCtrl = TextEditingController();
-  String _selectedPaletteJson = ColorPalettes.paletteToJson(ColorPalettes.palettes[0].colors);
+  late String _selectedPaletteJson;
   double _spinDuration = AppConstants.defaultSpinDuration.toDouble();
-  final List<Item> _items = [];
+  late List<Item> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    // Nếu có template, load data từ template
+    if (widget.template != null) {
+      final template = widget.template!;
+      _nameCtrl.text = template.name;
+      _selectedPaletteJson = template.suggestedColorPalette;
+      _items = template.items.map((label) => Item(label: label)).toList();
+    } else {
+      _selectedPaletteJson =
+          ColorPalettes.paletteToJson(ColorPalettes.palettes[0].colors);
+      _items = [];
+    }
+  }
 
   @override
   void dispose() {
@@ -125,15 +150,18 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: ColorPalettes.palettes.length,
                 itemBuilder: (context, index) {
                   final palette = ColorPalettes.palettes[index];
-                  final isSelected = _selectedPaletteJson == ColorPalettes.paletteToJson(palette.colors);
+                  final isSelected = _selectedPaletteJson ==
+                      ColorPalettes.paletteToJson(palette.colors);
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _selectedPaletteJson = ColorPalettes.paletteToJson(palette.colors);
+                        _selectedPaletteJson =
+                            ColorPalettes.paletteToJson(palette.colors);
                       });
                       Navigator.pop(context);
                     },
@@ -142,7 +170,9 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.grey.shade300,
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -180,8 +210,12 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                           Text(
                             palette.name,
                             style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                              color: isSelected ? AppColors.primary : Colors.black87,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.black87,
                             ),
                           ),
                         ],
@@ -287,7 +321,8 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.palette_outlined, size: 20, color: AppColors.primary),
+                      const Icon(Icons.palette_outlined,
+                          size: 20, color: AppColors.primary),
                       const SizedBox(width: 8),
                       const Text(
                         'Thang màu',
@@ -315,7 +350,8 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                             ],
                           ),
                           child: Row(
-                            children: ColorPalettes.jsonToPalette(_selectedPaletteJson)
+                            children: ColorPalettes.jsonToPalette(
+                                    _selectedPaletteJson)
                                 .map((color) {
                               return Expanded(
                                 child: Container(
@@ -356,7 +392,8 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.timer_outlined, size: 20, color: AppColors.primary),
+                      const Icon(Icons.timer_outlined,
+                          size: 20, color: AppColors.primary),
                       const SizedBox(width: 8),
                       const Text(
                         'Thời gian quay',
@@ -368,7 +405,8 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -466,7 +504,8 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                   icon: const Icon(Icons.add_circle_outline, size: 20),
                   label: const Text('Thêm mục'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
               ],

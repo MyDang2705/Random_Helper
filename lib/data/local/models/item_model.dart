@@ -9,26 +9,26 @@ class ItemModel extends Item {
     int weight = 1,
     String? color,
   }) : super(
-         id: id,
-         spinId: spinId,
-         label: label,
-         weight: weight,
-         color: color,
-       );
+          id: id,
+          spinId: spinId,
+          label: label,
+          weight: weight,
+          color: color,
+        );
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'spin_id': spinId,
-    'label': label,
-    'weight': weight,
-    'color': color,
-  };
+        'id': id,
+        'spin_id': spinId,
+        'label': label,
+        'weight': weight,
+        'color': color,
+      };
 
   factory ItemModel.fromMap(Map<String, dynamic> map) => ItemModel(
-    id: map['id'] as int?,
-    spinId: map['spin_id'] as int?,
-    label: map['label'] as String,
-    weight: map['weight'] as int,
-    color: map['color'] as String?,
-  );
+        id: map['id'] as int?,
+        spinId: map['spin_id'] as int?,
+        label: map['label'] as String,
+        weight: map['weight'] as int,
+        color: map['color'] as String?,
+      );
 }

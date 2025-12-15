@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'core/theme.dart';
+import 'core/utils/theme.dart';
 import 'data/repositories/spin_repository_impl.dart';
 import 'presentation/providers/spin_provider.dart';
-import 'presentation/pages/home_page.dart';
+import 'presentation/pages/main_dashboard.dart';
 
 void main() {
   runApp(const LuckyHubApp());
@@ -28,10 +28,10 @@ class LuckyHubApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'LuckyHub',
+        title: 'Random Helper',
         theme: appTheme,
         debugShowCheckedModeBanner: false,
-        home: const HomePage(),
+        home: const MainDashboard(),
       ),
     );
   }

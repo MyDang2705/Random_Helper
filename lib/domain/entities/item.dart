@@ -19,11 +19,12 @@ class Item {
     String? label,
     int? weight,
     String? color,
-  }) => Item(
-    id: id ?? this.id,
-    spinId: spinId ?? this.spinId,
-    label: label ?? this.label,
-    weight: weight ?? this.weight,
-    color: color ?? this.color,
-  );
+  }) =>
+      Item(
+        id: id ?? this.id,
+        spinId: spinId ?? this.spinId,
+        label: label ?? this.label,
+        weight: weight ?? this.weight,
+        color: color ?? this.color,
+      );
 }

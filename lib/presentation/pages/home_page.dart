@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../core/theme.dart';
+import '../../core/utils/theme.dart';
 import '../providers/spin_provider.dart';
 import 'create_spin_page.dart';
 import 'spin_page.dart';
@@ -76,7 +76,7 @@ class _HomePageState extends State<HomePage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'LuckyHub',
+                          'Random Helper',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 28,
@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Vòng quay may mắn',
+                          'Chọn ngẫu nhiên',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -680,7 +680,7 @@ void _showShareBottomSheet(BuildContext context, String shareText, String spinNa
                     Navigator.pop(context);
                     await Share.share(
                       shareText,
-                      subject: '🎰 Vòng quay may mắn: $spinName',
+                      subject: '🎰 Random Helper: $spinName',
                     );
                   },
                 ),

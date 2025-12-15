@@ -119,7 +119,9 @@ class ColorPalettes {
   ];
 
   static String paletteToJson(List<Color> colors) {
-    return colors.map((c) => '#${c.value.toRadixString(16).substring(2).toUpperCase()}').join(',');
+    return colors
+        .map((c) => '#${c.value.toRadixString(16).substring(2).toUpperCase()}')
+        .join(',');
   }
 
   static List<Color> jsonToPalette(String json) {
@@ -133,4 +135,3 @@ class ColorPalettes {
     }).toList();
   }
 }
-
