@@ -7,7 +7,7 @@ import '../../core/utils/constants.dart';
 
 class DBHelper {
   static const _dbName = AppConstants.dbName;
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
   static Database? _database;
 
   DBHelper._privateConstructor();
@@ -55,6 +55,14 @@ class DBHelper {
         // Cột đã tồn tại hoặc lỗi, bỏ qua
       }
     }
+    if (oldVersion < 4) {
+      // Thêm cột is_favorite vào spins cho version 4
+      try {
+        await db.execute('ALTER TABLE spins ADD COLUMN is_favorite INTEGER DEFAULT 0');
+      } catch (e) {
+        // Cột đã tồn tại hoặc lỗi, bỏ qua
+      }
+    }
   }
 
   Future _onCreate(Database db, int version) async {
@@ -64,7 +72,8 @@ class DBHelper {
         name TEXT NOT NULL,
         theme_color TEXT,
         created_at INTEGER NOT NULL,
-        spin_duration INTEGER
+        spin_duration INTEGER,
+        is_favorite INTEGER DEFAULT 0
       )
     ''');
 

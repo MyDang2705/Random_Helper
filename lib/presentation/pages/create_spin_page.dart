@@ -7,12 +7,13 @@ import '../../domain/entities/spin_template.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/color_palettes.dart';
 import '../../core/utils/theme.dart';
+import '../../core/utils/favorite_templates_helper.dart';
 import '../providers/spin_provider.dart';
 
 class CreateSpinPage extends StatefulWidget {
   final SpinTemplate? template;
 
-  const CreateSpinPage({Key? key, this.template}) : super(key: key);
+  const CreateSpinPage({super.key, this.template});
 
   /// Named constructor để tạo từ template
   factory CreateSpinPage.fromTemplate({required SpinTemplate template}) {
@@ -110,6 +111,87 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
               ),
             ),
             child: const Text('Thêm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditItemDialog(Item item, int index) {
+    final ctrl = TextEditingController(text: item.label);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          'Sửa mục',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Ví dụ: Nguyễn A hoặc 100',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          onSubmitted: (value) {
+            final val = value.trim();
+            if (val.isNotEmpty) {
+              setState(() {
+                _items[index] = Item(
+                  id: item.id,
+                  spinId: item.spinId,
+                  label: val,
+                  weight: item.weight,
+                  color: item.color,
+                );
+              });
+              Navigator.pop(context);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = ctrl.text.trim();
+              if (val.isNotEmpty) {
+                setState(() {
+                  _items[index] = Item(
+                    id: item.id,
+                    spinId: item.spinId,
+                    label: val,
+                    weight: item.weight,
+                    color: item.color,
+                  );
+                });
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Lưu'),
           ),
         ],
       ),
@@ -253,13 +335,26 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
     }
     final prov = Provider.of<SpinProvider>(context, listen: false);
     try {
+      // Kiểm tra xem template có phải là favorite không
+      bool isFavorite = false;
+      if (widget.template != null) {
+        isFavorite = await FavoriteTemplatesHelper.isFavorite(widget.template!.id);
+      }
+      
       final spin = Spin(
         name: _nameCtrl.text.trim(),
         themeColor: _selectedPaletteJson,
         createdAt: DateTime.now().millisecondsSinceEpoch,
         spinDuration: _spinDuration.toInt(),
+        isFavorite: isFavorite, // Tự động đánh dấu favorite nếu template là favorite
       );
-      await prov.createSpin(spin, _items);
+      final spinId = await prov.createSpin(spin, _items);
+      
+      // Nếu template là favorite, đảm bảo vòng quay mới cũng được đánh dấu favorite
+      if (isFavorite && spinId > 0) {
+        await prov.toggleFavorite(spinId, true);
+      }
+      
       if (mounted) {
         Navigator.pop(context);
       }
@@ -343,7 +438,7 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                             border: Border.all(color: Colors.grey.shade300),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha:0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -408,7 +503,7 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -460,7 +555,7 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.1),
+                      color: AppColors.warning.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -520,7 +615,7 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                           Icon(
                             Icons.inbox_outlined,
                             size: 48,
-                            color: AppColors.softText.withOpacity(0.5),
+                            color: AppColors.softText.withValues(alpha:0.5),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -535,7 +630,7 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                             'Nhấn "Thêm mục" để bắt đầu',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.softText.withOpacity(0.7),
+                              color: AppColors.softText.withValues(alpha:0.7),
                             ),
                           ),
                         ],
@@ -572,6 +667,15 @@ class _CreateSpinPageState extends State<CreateSpinPage> {
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit_outlined,
+                                  size: 20,
+                                  color: AppColors.primary,
+                                ),
+                                onPressed: () => _showEditItemDialog(item, index),
+                                tooltip: 'Sửa',
                               ),
                               IconButton(
                                 icon: const Icon(

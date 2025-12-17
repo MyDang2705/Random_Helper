@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/utils/theme.dart';
 import 'home_page.dart';
 import 'suggestions_page.dart';
+import 'favorite_spins_page.dart';
 
 class MainDashboard extends StatefulWidget {
-  const MainDashboard({Key? key}) : super(key: key);
+  const MainDashboard({super.key});
 
   @override
   _MainDashboardState createState() => _MainDashboardState();
@@ -13,9 +14,11 @@ class MainDashboard extends StatefulWidget {
 
 class _MainDashboardState extends State<MainDashboard> {
   int _selectedIndex = 0;
+  final GlobalKey _favoritePageKey = GlobalKey();
 
-  final List<Widget> _pages = [
+  List<Widget> get _pages => [
     const HomePage(),
+    FavoriteSpinsPage(key: _favoritePageKey),
     const SuggestionsPage(),
   ];
 
@@ -30,7 +33,7 @@ class _MainDashboardState extends State<MainDashboard> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha:0.1),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -42,19 +45,36 @@ class _MainDashboardState extends State<MainDashboard> {
             setState(() {
               _selectedIndex = index;
             });
+            // Reload favorite page khi chuyển sang tab yêu thích
+            if (index == 1) {
+              final state = _favoritePageKey.currentState;
+              if (state != null) {
+                // Gọi method reload thông qua dynamic
+                try {
+                  (state as dynamic).reload();
+                } catch (_) {
+                  // Ignore nếu không có method reload
+                }
+              }
+            }
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.softText,
           selectedFontSize: 12,
           unselectedFontSize: 12,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).cardColor,
           elevation: 8,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.casino),
               activeIcon: Icon(Icons.casino),
               label: 'Vòng quay của tôi',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite_border),
+              activeIcon: Icon(Icons.favorite),
+              label: 'Yêu thích',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.lightbulb_outline),

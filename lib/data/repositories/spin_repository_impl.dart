@@ -26,6 +26,7 @@ class SpinRepositoryImpl implements SpinRepository {
         themeColor: spin.themeColor,
         createdAt: spin.createdAt,
         spinDuration: spin.spinDuration,
+        isFavorite: spin.isFavorite, // Lưu trạng thái favorite
       ).toMap(),
     );
     for (var it in items) {
@@ -97,6 +98,7 @@ class SpinRepositoryImpl implements SpinRepository {
         themeColor: spin.themeColor,
         createdAt: spin.createdAt,
         spinDuration: spin.spinDuration,
+        isFavorite: spin.isFavorite,
       ).toMap(),
       where: 'id = ?',
       whereArgs: [spinId],
@@ -146,5 +148,28 @@ class SpinRepositoryImpl implements SpinRepository {
             ).toMap());
       }
     });
+  }
+
+  @override
+  Future<void> toggleFavorite(int spinId, bool isFavorite) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'spins',
+      {'is_favorite': isFavorite ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [spinId],
+    );
+  }
+
+  @override
+  Future<List<Spin>> getFavoriteSpins() async {
+    final db = await _dbHelper.database;
+    final maps = await db.query(
+      'spins',
+      where: 'is_favorite = ?',
+      whereArgs: [1],
+      orderBy: 'created_at DESC',
+    );
+    return maps.map((m) => SpinModel.fromMap(m) as Spin).toList();
   }
 }

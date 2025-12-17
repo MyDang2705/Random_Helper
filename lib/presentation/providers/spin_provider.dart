@@ -217,4 +217,30 @@ class SpinProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  /// Đánh dấu/bỏ đánh dấu vòng quay yêu thích
+  Future<void> toggleFavorite(int spinId, bool isFavorite) async {
+    try {
+      _error = null;
+      await repository.toggleFavorite(spinId, isFavorite);
+      // Cập nhật lại danh sách spins để reflect thay đổi
+      await loadSpins();
+    } catch (e) {
+      _error = 'Lỗi khi cập nhật yêu thích: ${e.toString()}';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Lấy danh sách vòng quay yêu thích
+  Future<List<Spin>> getFavoriteSpins() async {
+    try {
+      _error = null;
+      return await repository.getFavoriteSpins();
+    } catch (e) {
+      _error = 'Lỗi khi tải danh sách yêu thích: ${e.toString()}';
+      notifyListeners();
+      rethrow;
+    }
+  }
 }

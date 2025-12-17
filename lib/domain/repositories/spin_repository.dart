@@ -17,4 +17,10 @@ abstract class SpinRepository {
 
   /// Thay thế toàn bộ items của một spin (dùng khi shuffle)
   Future<void> replaceItems(int spinId, List<Item> newItems);
+
+  /// Đánh dấu/bỏ đánh dấu vòng quay yêu thích
+  Future<void> toggleFavorite(int spinId, bool isFavorite);
+
+  /// Lấy danh sách vòng quay yêu thích
+  Future<List<Spin>> getFavoriteSpins();
 }

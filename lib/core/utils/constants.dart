@@ -9,9 +9,9 @@ class AppConstants {
   static const int minItemsRequired = 1;
 
   // Animation
-  static const int minSpinDuration = 2000; // 2 giây
-  static const int maxSpinDuration = 8000; // 8 giây
-  static const int defaultSpinDuration = 3000; // 3 giây mặc định
+  static const int minSpinDuration = 2000; 
+  static const int maxSpinDuration = 8000; 
+  static const int defaultSpinDuration = 3000; 
   static const int minFullTurns = 3;
   static const int maxFullTurns = 6;
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/utils/theme.dart';
 import 'data/repositories/spin_repository_impl.dart';
 import 'presentation/providers/spin_provider.dart';
+import 'presentation/providers/theme_provider.dart';
 import 'presentation/pages/main_dashboard.dart';
 
 void main() {
@@ -26,12 +27,21 @@ class LuckyHubApp extends StatelessWidget {
           update: (context, repository, previous) =>
               previous ?? SpinProvider(repository),
         ),
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => ThemeProvider(),
+        ),
       ],
-      child: MaterialApp(
-        title: 'Random Helper',
-        theme: appTheme,
-        debugShowCheckedModeBanner: false,
-        home: const MainDashboard(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'Random Helper',
+            theme: appTheme,
+            darkTheme: appDarkTheme,
+            themeMode: themeProvider.themeMode,
+            debugShowCheckedModeBanner: false,
+            home: const MainDashboard(),
+          );
+        },
       ),
     );
   }

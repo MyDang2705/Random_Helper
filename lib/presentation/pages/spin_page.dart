@@ -14,12 +14,12 @@ class SpinPage extends StatefulWidget {
   final int? spinDuration;
 
   const SpinPage({
-    Key? key,
+    super.key,
     required this.spinId,
     required this.spinName,
     this.spinColor,
     this.spinDuration,
-  }) : super(key: key);
+  });
 
   @override
   _SpinPageState createState() => _SpinPageState();
@@ -74,21 +74,25 @@ class _SpinPageState extends State<SpinPage> {
           await _loadItems();
 
           // Hiển thị thông báo thành công ngay
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Đã khôi phục $count mục'),
-              backgroundColor: AppColors.success,
-              duration: const Duration(seconds: 1),
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đã khôi phục $count mục'),
+                backgroundColor: AppColors.success,
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          }
         } else {
           // Không có gì để khôi phục
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Không có mục nào để khôi phục'),
-              duration: Duration(seconds: 1),
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Không có mục nào để khôi phục'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -206,6 +210,7 @@ class _SpinPageState extends State<SpinPage> {
           await _loadItems();
         }
 
+        if (!mounted) return;
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -219,7 +224,7 @@ class _SpinPageState extends State<SpinPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -339,12 +344,12 @@ class _SpinPageState extends State<SpinPage> {
                           color: AppColors.bgCard,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha:0.3),
                             width: 2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.15),
+                              color: AppColors.primary.withValues(alpha:0.15),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -413,7 +418,7 @@ class _SpinPageState extends State<SpinPage> {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: Colors.black.withValues(alpha:0.2),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -506,17 +511,17 @@ class _CompactActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           decoration: BoxDecoration(
-            color: isLoading ? color.withOpacity(0.5) : color,
+            color: isLoading ? color.withValues(alpha:0.5) : color,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha:0.3),
               width: 1,
             ),
             boxShadow: isLoading
                 ? []
                 : [
                     BoxShadow(
-                      color: color.withOpacity(0.25),
+                      color: color.withValues(alpha:0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

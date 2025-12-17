@@ -4,31 +4,205 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/utils/theme.dart';
+import '../../core/utils/sort_options.dart';
+import '../../core/utils/vietnamese_helper.dart';
+import '../../domain/entities/spin.dart';
 import '../providers/spin_provider.dart';
 import 'create_spin_page.dart';
 import 'spin_page.dart';
 import 'history_page.dart';
 import 'edit_spin_page.dart';
+import 'settings_page.dart';
 
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  final TextEditingController _searchController = TextEditingController();
+  SpinSortOption _currentSort = SpinSortOption.newestFirst;
+  List<Spin> _filteredSpins = [];
+
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SpinProvider>(context, listen: false).loadSpins();
     });
   }
 
   @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _applyFilters();
+    });
+  }
+
+  List<Spin> _applyFiltersAndGetSorted(List<Spin> spins) {
+    String query = _searchController.text.trim();
+    
+    // Filter - sử dụng VietnameseHelper để tìm không phân biệt dấu
+    List<Spin> filtered = spins.where((spin) {
+      if (query.isEmpty) return true;
+      return VietnameseHelper.containsIgnoreDiacritics(spin.name, query);
+    }).toList();
+
+    // Sort
+    filtered.sort((a, b) {
+      switch (_currentSort) {
+        case SpinSortOption.newestFirst:
+          return b.createdAt.compareTo(a.createdAt);
+        case SpinSortOption.oldestFirst:
+          return a.createdAt.compareTo(b.createdAt);
+        case SpinSortOption.nameAZ:
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        case SpinSortOption.nameZA:
+          return b.name.toLowerCase().compareTo(a.name.toLowerCase());
+        case SpinSortOption.favoriteFirst:
+          if (a.isFavorite && !b.isFavorite) return -1;
+          if (!a.isFavorite && b.isFavorite) return 1;
+          return b.createdAt.compareTo(a.createdAt);
+        case SpinSortOption.notFavoriteFirst:
+          if (!a.isFavorite && b.isFavorite) return -1;
+          if (a.isFavorite && !b.isFavorite) return 1;
+          return b.createdAt.compareTo(a.createdAt);
+      }
+    });
+
+    return filtered;
+  }
+
+  void _applyFilters() {
+    final prov = Provider.of<SpinProvider>(context, listen: false);
+    String query = _searchController.text.trim();
+    
+    // Filter - sử dụng VietnameseHelper để tìm không phân biệt dấu
+    List<Spin> filtered = prov.spins.where((spin) {
+      if (query.isEmpty || query.trim().isEmpty) return true;
+      return VietnameseHelper.containsIgnoreDiacritics(spin.name, query);
+    }).toList();
+
+    // Sort
+    filtered.sort((a, b) {
+      switch (_currentSort) {
+        case SpinSortOption.newestFirst:
+          return b.createdAt.compareTo(a.createdAt);
+        case SpinSortOption.oldestFirst:
+          return a.createdAt.compareTo(b.createdAt);
+        case SpinSortOption.nameAZ:
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        case SpinSortOption.nameZA:
+          return b.name.toLowerCase().compareTo(a.name.toLowerCase());
+        case SpinSortOption.favoriteFirst:
+          if (a.isFavorite && !b.isFavorite) return -1;
+          if (!a.isFavorite && b.isFavorite) return 1;
+          return b.createdAt.compareTo(a.createdAt);
+        case SpinSortOption.notFavoriteFirst:
+          if (!a.isFavorite && b.isFavorite) return -1;
+          if (a.isFavorite && !b.isFavorite) return 1;
+          return b.createdAt.compareTo(a.createdAt);
+      }
+    });
+
+    _filteredSpins = filtered;
+  }
+
+  void _showSortBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                children: [
+                  Icon(Icons.sort, color: AppColors.primary, size: 24),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Sắp xếp vòng quay',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ...SpinSortOption.values.map((option) {
+              final isSelected = _currentSort == option;
+              return ListTile(
+                leading: Icon(
+                  option.icon,
+                  color: isSelected ? AppColors.primary : AppColors.softText,
+                ),
+                title: Text(
+                  option.displayName,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                ),
+                trailing: isSelected
+                    ? Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _currentSort = option;
+                    _applyFilters();
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final prov = Provider.of<SpinProvider>(context);
+    
+    // Auto apply filters when spins change
+    if (prov.spins.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _applyFilters();
+          });
+        }
+      });
+    }
+    
     return Scaffold(
       extendBodyBehindAppBar: false,
       appBar: PreferredSize(
@@ -38,7 +212,7 @@ class _HomePageState extends State<HomePage> {
             gradient: AppColors.primaryGradient,
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.4),
+                color: AppColors.primary.withValues(alpha:0.4),
                 blurRadius: 15,
                 offset: const Offset(0, 4),
               ),
@@ -54,10 +228,10 @@ class _HomePageState extends State<HomePage> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha:0.2),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha:0.3),
                         width: 1.5,
                       ),
                     ),
@@ -104,6 +278,23 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
+                  // Settings button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.settings,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsPage(),
+                        ),
+                      );
+                    },
+                    tooltip: 'Cài đặt',
+                  ),
                 ],
               ),
             ),
@@ -113,6 +304,123 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Search và Sort bar
+          if (!prov.loading && prov.spins.isNotEmpty) ...[
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: ThemeColors.getBgCard(context),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha:0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Search bar
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey.shade900
+                            : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade200,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        keyboardType: TextInputType.text,
+                        textInputAction: TextInputAction.search,
+                        enableSuggestions: true,
+                        autocorrect: true,
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm vòng quay...',
+                          hintStyle: TextStyle(color: Colors.grey.shade400),
+                          prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, color: Colors.grey.shade400),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Sort button
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha:0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _showSortBottomSheet(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.sort, color: Colors.white, size: 20),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Sắp xếp',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Result count
+            if (_searchController.text.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Tìm thấy ${_filteredSpins.length} vòng quay',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.softText,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+          ],
           // Hero banner với thông tin
           if (!prov.loading && prov.spins.isNotEmpty)
             Container(
@@ -121,20 +429,20 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primary.withOpacity(0.1),
-                    AppColors.primaryLight.withOpacity(0.05),
+                    AppColors.primary.withValues(alpha:0.1),
+                    AppColors.primaryLight.withValues(alpha:0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha:0.2),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha:0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -149,7 +457,7 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha:0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -166,12 +474,12 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Tạo vòng quay ngay!',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: ThemeColors.getTextPrimary(context),
                             letterSpacing: -0.3,
                           ),
                         ),
@@ -180,7 +488,7 @@ class _HomePageState extends State<HomePage> {
                           'Quay tên, quay số, chia sẻ với bạn bè',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.softText,
+                            color: ThemeColors.getSoftText(context),
                             height: 1.3,
                           ),
                         ),
@@ -196,21 +504,38 @@ class _HomePageState extends State<HomePage> {
                 ? const Center(child: CircularProgressIndicator())
                 : prov.spins.isEmpty
                 ? _emptyState(context)
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: ListView.builder(
-                      itemCount: prov.spins.length,
-                      itemBuilder: (c, i) {
-                        final s = prov.spins[i];
-                        return _spinCard(
-                          s.name,
-                          s.themeColor,
-                          s.id ?? 0,
-                          s.spinDuration,
-                          context,
-                        );
-                      },
-                    ),
+                : Builder(
+                    builder: (context) {
+                      // Apply filters and sort
+                      final displaySpins = _applyFiltersAndGetSorted(prov.spins);
+                      
+                      if (_searchController.text.isNotEmpty && displaySpins.isEmpty) {
+                        return _emptySearchState();
+                      }
+                      
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          await prov.loadSpins();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: ListView.builder(
+                            itemCount: displaySpins.length,
+                            itemBuilder: (c, i) {
+                              final s = displaySpins[i];
+                              return _spinCard(
+                                s.name,
+                                s.themeColor,
+                                s.id ?? 0,
+                                s.spinDuration,
+                                s.isFavorite,
+                                context,
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
                   ),
           ),
         ],
@@ -229,6 +554,38 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _emptySearchState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 80,
+            color: AppColors.softText.withValues(alpha:0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Không tìm thấy vòng quay nào',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Thử tìm kiếm với từ khóa khác',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.softText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _emptyState(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
@@ -242,7 +599,7 @@ class _HomePageState extends State<HomePage> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha:0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -314,7 +671,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _spinCard(String name, String? hex, int id, int? spinDuration, BuildContext context) {
+  Widget _spinCard(String name, String? hex, int id, int? spinDuration, bool isFavorite, BuildContext context) {
     // Parse palette colors if available
     List<Color> paletteColors = [AppColors.primary];
     if (hex != null && hex.contains(',')) {
@@ -340,12 +697,12 @@ class _HomePageState extends State<HomePage> {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: primaryColor.withOpacity(0.2),
+          color: primaryColor.withValues(alpha:0.2),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.15),
+            color: primaryColor.withValues(alpha:0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -380,14 +737,14 @@ class _HomePageState extends State<HomePage> {
                     gradient: LinearGradient(
                       colors: paletteColors.length > 1
                           ? paletteColors
-                          : [primaryColor, primaryColor.withOpacity(0.7)],
+                          : [primaryColor, primaryColor.withValues(alpha:0.7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withOpacity(0.4),
+                        color: primaryColor.withValues(alpha:0.4),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -431,6 +788,37 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(width: 4),
+                // Icon trái tim yêu thích
+                IconButton(
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? Colors.red : Colors.grey,
+                    size: 24,
+                  ),
+                  onPressed: () async {
+                    final prov = Provider.of<SpinProvider>(context, listen: false);
+                    try {
+                      await prov.toggleFavorite(id, !isFavorite);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isFavorite ? 'Đã bỏ yêu thích' : 'Đã thêm vào yêu thích',
+                            ),
+                            duration: const Duration(seconds: 1),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                        );
+                      }
+                    }
+                  },
+                ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
                   shape: RoundedRectangleBorder(
@@ -468,6 +856,7 @@ class _HomePageState extends State<HomePage> {
                         }
                       }
                     } else if (value == 'delete') {
+                      final prov = Provider.of<SpinProvider>(context, listen: false);
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -493,7 +882,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                       if (confirmed == true) {
-                        final prov = Provider.of<SpinProvider>(context, listen: false);
                         try {
                           await prov.deleteSpin(id);
                           if (context.mounted) {

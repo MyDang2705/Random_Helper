@@ -13,10 +13,10 @@ class EditSpinPage extends StatefulWidget {
   final Spin spin;
 
   const EditSpinPage({
-    Key? key,
+    super.key,
     required this.spinId,
     required this.spin,
-  }) : super(key: key);
+  });
 
   @override
   _EditSpinPageState createState() => _EditSpinPageState();
@@ -105,6 +105,53 @@ class _EditSpinPageState extends State<EditSpinPage> {
               }
             },
             child: const Text('Thêm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditItemDialog(Item item, int index) {
+    final ctrl = TextEditingController(text: item.label);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Sửa mục'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Ví dụ: Nguyễn A hoặc 100',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final val = ctrl.text.trim();
+              if (val.isNotEmpty && item.id != null) {
+                final prov = Provider.of<SpinProvider>(context, listen: false);
+                try {
+                  // Xóa item cũ và thêm item mới với label đã sửa
+                  await prov.deleteItem(item.id!);
+                  await prov.addItem(widget.spinId, Item(label: val));
+                  await _loadItems();
+                  if (mounted) Navigator.pop(context);
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Lỗi: ${e.toString()}')),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Lưu'),
           ),
         ],
       ),
@@ -326,7 +373,7 @@ class _EditSpinPageState extends State<EditSpinPage> {
                                       Border.all(color: Colors.grey.shade300),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(alpha:0.05),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -391,7 +438,7 @@ class _EditSpinPageState extends State<EditSpinPage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha:0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -468,7 +515,9 @@ class _EditSpinPageState extends State<EditSpinPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  ..._items.map((item) {
+                  ..._items.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final item = entry.value;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(12),
@@ -499,6 +548,15 @@ class _EditSpinPageState extends State<EditSpinPage> {
                           ),
                           IconButton(
                             icon: const Icon(
+                              Icons.edit_outlined,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
+                            onPressed: () => _showEditItemDialog(item, index),
+                            tooltip: 'Sửa',
+                          ),
+                          IconButton(
+                            icon: const Icon(
                               Icons.delete_outline,
                               size: 20,
                               color: AppColors.error,
@@ -512,7 +570,7 @@ class _EditSpinPageState extends State<EditSpinPage> {
                                   await _loadItems();
                                 }
                               } catch (e) {
-                                if (mounted) {
+                                if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                         content: Text('Lỗi: ${e.toString()}')),

@@ -3,18 +3,12 @@ import '../../../domain/entities/item.dart';
 
 class ItemModel extends Item {
   const ItemModel({
-    int? id,
-    int? spinId,
-    required String label,
-    int weight = 1,
-    String? color,
-  }) : super(
-          id: id,
-          spinId: spinId,
-          label: label,
-          weight: weight,
-          color: color,
-        );
+    super.id,
+    super.spinId,
+    required super.label,
+    super.weight = 1,
+    super.color,
+  });
 
   Map<String, dynamic> toMap() => {
         'id': id,

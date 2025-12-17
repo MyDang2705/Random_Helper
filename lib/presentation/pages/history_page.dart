@@ -10,10 +10,10 @@ class HistoryPage extends StatefulWidget {
   final String spinName;
 
   const HistoryPage({
-    Key? key,
+    super.key,
     required this.spinId,
     required this.spinName,
-  }) : super(key: key);
+  });
 
   @override
   _HistoryPageState createState() => _HistoryPageState();
@@ -136,7 +136,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
+                              color: Colors.black.withValues(alpha:0.03),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -155,7 +155,7 @@ class _HistoryPageState extends State<HistoryPage> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
+                                  color: AppColors.primary.withValues(alpha:0.3),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -204,7 +204,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           trailing: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.success.withOpacity(0.1),
+                              color: AppColors.success.withValues(alpha:0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(

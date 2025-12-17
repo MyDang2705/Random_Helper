@@ -120,7 +120,11 @@ class ColorPalettes {
 
   static String paletteToJson(List<Color> colors) {
     return colors
-        .map((c) => '#${c.value.toRadixString(16).substring(2).toUpperCase()}')
+        .map((c) {
+          // ignore: deprecated_member_use
+          final argb = c.value;
+          return '#${argb.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+        })
         .join(',');
   }
 

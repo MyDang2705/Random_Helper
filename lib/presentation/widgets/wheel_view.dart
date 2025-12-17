@@ -1,4 +1,3 @@
-// lib/presentation/widgets/wheel_view.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../domain/entities/item.dart';
@@ -12,16 +11,16 @@ class WheelView extends StatefulWidget {
   final String? themeColor;
   final double size;
   final OnSpinEnd? onSpinEnd;
-  final int? spinDuration; // Thời gian quay tùy chỉnh
+  final int? spinDuration; 
 
   const WheelView({
-    Key? key,
+    super.key,
     required this.items,
     this.themeColor,
     this.size = 320,
     this.onSpinEnd,
     this.spinDuration,
-  }) : super(key: key);
+  });
 
   @override
   WheelViewState createState() => WheelViewState();
@@ -43,7 +42,6 @@ class WheelViewState extends State<WheelView>
   @override
   void didUpdateWidget(WheelView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reset rotation về 0 khi items thay đổi (ví dụ khi restore hoặc shuffle)
     if (oldWidget.items.length != widget.items.length ||
         _hasItemsChanged(oldWidget.items, widget.items)) {
       setState(() {
@@ -52,7 +50,6 @@ class WheelViewState extends State<WheelView>
     }
   }
 
-  /// Kiểm tra xem danh sách items có thay đổi không
   bool _hasItemsChanged(List<Item> oldItems, List<Item> newItems) {
     if (oldItems.length != newItems.length) return true;
     for (int i = 0; i < oldItems.length; i++) {
@@ -172,7 +169,7 @@ class WheelViewState extends State<WheelView>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha:0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -201,7 +198,7 @@ class WheelViewState extends State<WheelView>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha:0.2),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -274,19 +271,19 @@ class _WheelPainter extends CustomPainter {
           text: label,
           style: TextStyle(
             color: textColor,
-            fontSize: 16, // Tăng font size
+            fontSize: 16, 
             fontWeight: FontWeight.bold,
             shadows: textColor == Colors.white
                 ? [
                     Shadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha:0.5),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
                   ]
                 : [
                     Shadow(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha:0.8),
                       blurRadius: 3,
                       offset: const Offset(0, 1),
                     ),

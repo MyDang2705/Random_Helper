@@ -4,6 +4,7 @@ class Spin {
   final String? themeColor;
   final int createdAt;
   final int? spinDuration; // Thời gian quay tính bằng milliseconds
+  final bool isFavorite; // Đánh dấu vòng quay yêu thích
 
   const Spin({
     this.id,
@@ -11,6 +12,7 @@ class Spin {
     this.themeColor,
     required this.createdAt,
     this.spinDuration,
+    this.isFavorite = false,
   });
 
   Spin copyWith({
@@ -19,6 +21,7 @@ class Spin {
     String? themeColor,
     int? createdAt,
     int? spinDuration,
+    bool? isFavorite,
   }) =>
       Spin(
         id: id ?? this.id,
@@ -26,5 +29,6 @@ class Spin {
         themeColor: themeColor ?? this.themeColor,
         createdAt: createdAt ?? this.createdAt,
         spinDuration: spinDuration ?? this.spinDuration,
+        isFavorite: isFavorite ?? this.isFavorite,
       );
 }
